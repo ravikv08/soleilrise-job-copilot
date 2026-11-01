@@ -1,0 +1,48 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply-helper:
+    name: apply-helper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright pyyaml
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      # Checks the filler answers truthfully, declines EEO questions, leaves
+      # unknowns flagged, is idempotent on a second pass, and never submits.
+      - name: Run the form-fill test suite
+        working-directory: apply-helper
+        run: python test/test_fill.py
+
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check the artifact's inline JavaScript parses
+        run: node .github/scripts/check-inline-js.mjs app/index.html

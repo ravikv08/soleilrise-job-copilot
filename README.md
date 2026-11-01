@@ -1,5 +1,7 @@
 # SoleilRise Job Copilot
 
+[![Tests](https://github.com/ravikv08/soleilrise/actions/workflows/tests.yml/badge.svg)](https://github.com/ravikv08/soleilrise/actions/workflows/tests.yml)
+
 An AI job-search copilot that finds fresh US roles, tailors your resume truthfully toward each posting, and tracks applications through interviews.
 
 **Flow:** Profile → Find → Tailor → Apply → Interview → Outcome
@@ -39,3 +41,23 @@ The app runs inside Claude only. It uses Claude's sign-in, per-user storage, AI 
 - Never submits an application for you.
 - Never stores passwords. It never logs in to LinkedIn or scrapes it.
 - EEO and self-identification questions default to "decline to answer".
+
+## Tests
+
+```bash
+cd apply-helper && pip install playwright pyyaml && python -m playwright install chromium
+python test/test_fill.py
+```
+
+The suite runs the filler against a mock Greenhouse form and asserts it never submits,
+declines the EEO questions, leaves anything unanswerable flagged, and fills nothing twice
+on a second pass. CI also parses the inline JavaScript in `app/index.html`, which ships
+to Claude as-is with no build step:
+
+```bash
+node .github/scripts/check-inline-js.mjs app/index.html
+```
+
+## License
+
+[MIT](LICENSE) © 2026 Ravi Vadla
