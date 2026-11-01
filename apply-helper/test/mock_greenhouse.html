@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Job Application for Delivery Solutions Architect at Databricks</title>
+<style>.field{margin:10px}.select__menu{border:1px solid #ccc}.select__option{padding:4px;cursor:pointer}</style></head><body>
+<form id="f" onsubmit="window.__submitted=true;event.preventDefault()">
+<div class="field"><label for="first_name">First Name*</label><input id="first_name" type="text" aria-required="true"></div>
+<div class="field"><label for="last_name">Last Name*</label><input id="last_name" type="text" aria-required="true"></div>
+<div class="field"><label for="preferred_name">Preferred First Name*</label><input id="preferred_name" type="text" aria-required="true"></div>
+<div class="field"><label for="email">Email*</label><input id="email" type="text" aria-required="true"></div>
+<div class="field" data-combo="country" data-opts="Canada|India|United Kingdom|United States|United States Minor Outlying Islands"><label for="country">Country*</label></div>
+<div class="field"><label for="phone">Phone*</label><input id="phone" type="tel" aria-required="true"></div>
+<div class="field"><label>Resume/CV</label><button type="button">Attach</button><input id="resume" type="file" style="display:none"></div>
+<div class="field"><label>Cover Letter</label><button type="button">Attach</button><input id="cover_letter" type="file" style="display:none"></div>
+<div class="field"><label for="q1">LinkedIn Profile*</label><input id="q1" type="text" aria-required="true"></div>
+<div class="field"><label for="q2">Website</label><input id="q2" type="text"></div>
+<div class="field"><label for="q3">How did you hear about this job?</label><input id="q3" type="text"></div>
+<div class="field" data-combo="q4" data-opts="Yes|No"><label for="q4">Are you legally authorized to work in the country in which you are applying?*</label></div>
+<div class="field" data-combo="q5" data-opts="Yes|No"><label for="q5">Do you now or will you in the future need sponsorship for employment visa status in the country in which you are applying?*</label></div>
+<div class="field" data-combo="q6" data-opts="Yes|No"><label for="q6">Do you currently or have you previously worked for Databricks in the past?*</label></div>
+<fieldset><legend>Please confirm whether any of the below applies to you. Select all that apply. Note: This information will only be used to ensure compliance with U.S. sanctions and export controls. *</legend>
+ <input type="checkbox" name="q7[]" id="q7a"><label for="q7a">Citizen or permanent resident of Cuba, Iran, North Korea, or Syria</label>
+ <input type="checkbox" name="q7[]" id="q7b"><label for="q7b">Ordinarily a resident of Cuba, Iran, North Korea, Syria or the Crimea</label>
+ <input type="checkbox" name="q7[]" id="q7d"><label for="q7d">None of the above</label></fieldset>
+<fieldset><legend>If you selected a response to the prior question other than “none of the above,” please confirm whether any of the following also applies to you. Select all that apply. *</legend>
+ <input type="checkbox" name="q8[]" id="q8a"><label for="q8a">U.S. citizen</label>
+ <input type="checkbox" name="q8[]" id="q8b"><label for="q8b">U.S. non-citizen national</label>
+ <input type="checkbox" name="q8[]" id="q8c"><label for="q8c">U.S. permanent resident (Green Card holder)</label>
+ <input type="checkbox" name="q8[]" id="q8d"><label for="q8d">Individual granted permanent residency in a country other than Cuba, Iran, North Korea, or Syria</label>
+ <input type="checkbox" name="q8[]" id="q8e"><label for="q8e">None of these apply to me</label>
+ <input type="checkbox" name="q8[]" id="q8f"><label for="q8f">Not applicable (i.e., I selected “none of the above” for the prior question)</label></fieldset>
+<fieldset><legend>Which of the following describes your status?*</legend>
+ <input type="checkbox" name="q10[]" id="q10a"><label for="q10a">U.S. citizen</label>
+ <input type="checkbox" name="q10[]" id="q10b"><label for="q10b">U.S. permanent resident (Green Card holder)</label></fieldset>
+<div class="field" data-combo="gender" data-opts="Male|Female|Decline To Self Identify"><label for="gender">Gender</label></div>
+<div class="field" data-combo="hispanic_ethnicity" data-opts="Yes|No|Decline To Self Identify"><label for="hispanic_ethnicity">Are you Hispanic/Latino?</label></div>
+<div class="field" data-combo="veteran_status" data-opts="I am not a protected veteran|I identify as one or more of the classifications of a protected veteran|I don't wish to answer"><label for="veteran_status">Veteran Status</label></div>
+<div class="field"><label for="q9">Why do you want to work at Databricks?*</label><textarea id="q9" aria-required="true"></textarea></div>
+<button type="submit">Submit application</button>
+</form>
+<script>
+for (const d of document.querySelectorAll('[data-combo]')) {
+  const id = d.dataset.combo, opts = d.dataset.opts.split('|');
+  const c = document.createElement('div'); c.className = 'select__container';
+  c.innerHTML = `<div class="select__control"><div class="select__single-value"></div><input id="${id}" role="combobox" class="select__input" aria-required="${/\*/.test(d.textContent)}"></div><div class="select__menu" hidden></div>`;
+  d.appendChild(c);
+  const inp = c.querySelector('input'), menu = c.querySelector('.select__menu'), sv = c.querySelector('.select__single-value');
+  const draw = () => { const q = inp.value.toLowerCase(); menu.innerHTML = opts.filter(o => o.toLowerCase().includes(q)).map(o => `<div role="option" class="select__option">${o}</div>`).join(''); menu.hidden = false; };
+  inp.addEventListener('click', draw); inp.addEventListener('input', draw);
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape') menu.hidden = true; });
+  menu.addEventListener('click', e => { const o = e.target.closest('[role=option]'); if (!o) return; sv.textContent = o.textContent; inp.value = ''; menu.hidden = true; });
+}
+</script></body></html>

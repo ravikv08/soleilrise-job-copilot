@@ -1,0 +1,6 @@
+apply-helper/profile.yaml
+apply-helper/.venv/
+apply-helper/apply
+__pycache__/
+*.pdf
+.DS_Store

@@ -1,0 +1,44 @@
+# SoleilRise Assisted Apply: your answers.
+# Copy to profile.yaml and fill in once.
+# No passwords go here, ever. Anything left blank (or null) is NOT guessed:
+# the form field is outlined in red for you to answer.
+
+first_name: ""
+last_name: ""
+preferred_name: ""
+email: ""
+phone: ""
+linkedin: ""
+github: ""
+website: ""                     # optional
+
+city: ""                        # typed into location pickers
+state_name: ""
+location_text: ""
+zip: ""                         # optional; left blank = flagged when required
+
+current_company: ""
+current_title: ""
+heard_about: Company careers website
+
+# Employers on your resume. Used only to answer "Have you worked for <company> before?":
+# if the company is on this list you answer it yourself; otherwise the answer is No.
+past_employers: []             # employers on your resume, e.g. ["Acme", "Globex"]
+
+# ── Work authorization  ──
+authorized_to_work_us: null    # true / false
+needs_sponsorship: null        # true / false
+us_status: ""                   # green_card | citizen
+has_clearance: false
+
+# Export-control screening (Databricks, Nvidia and others ask this):
+# "Citizen/permanent resident or ordinary resident of Cuba, Iran, North Korea, Syria, Crimea…?"
+# Set to false ONLY if none of those apply to you (answers "None of the above"). null = you answer each time.
+sanctioned_country_ties: null
+
+willing_to_relocate: null
+notice_period: ""
+has_noncompete: false
+desired_salary: null            # null = you type it per job (recommended)
+
+# EEO / voluntary self-identification is always answered "Decline to self-identify".
