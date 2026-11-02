@@ -1,6 +1,6 @@
 # SoleilRise Job Copilot
 
-[![Tests](https://github.com/ravikv08/soleilrise/actions/workflows/tests.yml/badge.svg)](https://github.com/ravikv08/soleilrise/actions/workflows/tests.yml)
+[![Tests](https://github.com/ravikv08/soleilrise-job-copilot/actions/workflows/tests.yml/badge.svg)](https://github.com/ravikv08/soleilrise-job-copilot/actions/workflows/tests.yml)
 
 An AI job-search copilot that finds fresh US roles, tailors your resume truthfully toward each posting, and tracks applications through interviews.
 
