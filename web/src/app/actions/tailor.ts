@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireUserId } from "@/auth";
 import { db } from "@/db";
-import { applications, profiles } from "@/db/schema";
+import { applications, profiles, SENT, STATUS } from "@/db/schema";
 import { AiError, callJson } from "@/lib/ai/client";
 import { tailorPrompt } from "@/lib/ai/prompts";
 import { EFFORT, MODELS } from "@/lib/pricing";
@@ -251,4 +251,57 @@ export async function unapprove(id: string): Promise<ActionState> {
     .where(and(eq(applications.id, id), eq(applications.userId, userId)));
   revalidatePath(`/studio/${id}`);
   return { ok: true };
+}
+
+export async function setStatus(
+  id: string,
+  status: (typeof STATUS)[number],
+): Promise<ActionState> {
+  const userId = await requireUserId();
+  const [app] = await db
+    .select({ appliedAt: applications.appliedAt })
+    .from(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
+    .limit(1);
+  if (!app) return { ok: false, message: "Not found." };
+
+  await db
+    .update(applications)
+    .set({
+      status,
+      // Stamp the first time it is marked sent; later status changes keep the
+      // original date, which is what the follow-up clock counts from.
+      appliedAt:
+        (SENT as readonly string[]).includes(status) && !app.appliedAt
+          ? new Date()
+          : app.appliedAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(applications.id, id));
+
+  revalidatePath("/apps");
+  revalidatePath(`/studio/${id}`);
+  revalidatePath("/studio");
+  return { ok: true, message: `Marked ${status}` };
+}
+
+/** Everything the applications view needs, without the heavy jd/result blobs. */
+export async function listForApps() {
+  const userId = await requireUserId();
+  return db
+    .select({
+      id: applications.id,
+      company: applications.company,
+      title: applications.title,
+      location: applications.location,
+      url: applications.url,
+      status: applications.status,
+      appliedAt: applications.appliedAt,
+      approvedAt: applications.approvedAt,
+      updatedAt: applications.updatedAt,
+    })
+    .from(applications)
+    .where(eq(applications.userId, userId))
+    .orderBy(desc(applications.updatedAt))
+    .limit(200);
 }

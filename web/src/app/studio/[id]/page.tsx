@@ -6,11 +6,13 @@ import {
   approveResume,
   getApplication,
   setDecision,
+  setStatus,
   tailorApplication,
   unapprove,
 } from "@/app/actions/tailor";
 import { auth } from "@/auth";
 import { TailorButton } from "@/components/StudioForms";
+import { StatusPicker } from "@/components/StatusPicker";
 import { ApproveButton, ChangeRow, StepNav } from "@/components/StudioSteps";
 import { computeChanges, finalResume, needsReview } from "@/lib/changes";
 import { TARGET, validResult } from "@/lib/resume";
@@ -288,6 +290,18 @@ export default async function ApplicationPage({
                 Built from what you approved, rejections included. The PDF is checked line by
                 line against the approved text before it is sent.
               </p>
+              {app.url ? (
+                <a className="btn" href={app.url} target="_blank" rel="noopener noreferrer">
+                  Apply on the company site ↗
+                </a>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-3">
+                <StatusPicker id={app.id} status={app.status} action={setStatus} />
+                <span className="text-sm" style={{ color: "var(--muted)" }}>
+                  Mark it Applied once you have submitted it, and it moves to{" "}
+                  <Link href="/apps">My Applications</Link>.
+                </span>
+              </div>
               <ApproveButton id={app.id} action={unapprove} label="Edit this resume" ghost />
             </>
           ) : (

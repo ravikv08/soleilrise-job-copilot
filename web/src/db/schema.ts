@@ -137,6 +137,19 @@ export const STATUS = [
 ] as const;
 
 /**
+ * Statuses that mean the application has actually been sent to the employer.
+ * Lives here rather than in the actions module: a "use server" file may only
+ * export async functions, so a plain constant there fails at runtime.
+ */
+export const SENT = [
+  "Applied",
+  "Recruiter replied",
+  "Interview",
+  "Offer",
+  "Rejected",
+] as const satisfies readonly (typeof STATUS)[number][];
+
+/**
  * The per-user record of one job: its description, the tailoring result, the
  * edits the user approved, and where it sits in the funnel. This is the
  * artifact's `kind=="job"` document, normalised.

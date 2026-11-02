@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/profile", label: "My Profile" },
   { href: "/studio", label: "Resume Studio" },
+  { href: "/apps", label: "My Applications" },
 ];
 
 export default async function RootLayout({

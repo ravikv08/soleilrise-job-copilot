@@ -15,6 +15,9 @@ const eslintConfig = [
     ignores: [
       "node_modules/**",
       ".next/**",
+      // The production build output, kept separate so a build cannot clobber
+      // the running dev server. It is generated code; never lint it.
+      ".next-build/**",
       "out/**",
       "build/**",
       "next-env.d.ts",
