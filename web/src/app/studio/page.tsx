@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { addPosting } from "@/app/actions/tailor";
-import { listApplications } from "@/app/actions/tailor";
+import { addPosting, listApplications } from "@/app/actions/tailor";
 import { auth } from "@/auth";
 import { PostingForm } from "@/components/StudioForms";
 

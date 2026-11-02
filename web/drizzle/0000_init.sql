@@ -25,7 +25,7 @@ CREATE TABLE "ai_usage" (
 	"cache_write_tokens" integer DEFAULT 0 NOT NULL,
 	"cost_usd" numeric(12, 6) DEFAULT '0' NOT NULL,
 	"duration_ms" integer,
-	"ok" text DEFAULT 'true' NOT NULL,
+	"ok" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint

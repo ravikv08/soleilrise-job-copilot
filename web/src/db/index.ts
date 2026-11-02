@@ -14,7 +14,11 @@ if (!url) {
  * Postgres will refuse new ones long before you notice locally.
  */
 const g = globalThis as unknown as { __sql?: ReturnType<typeof postgres> };
-const sql = g.__sql ?? postgres(url, { max: 10 });
+// Each serverless instance opens its own pool, so this multiplies by the
+// number of warm instances. Keep it small and point DATABASE_URL at a pooler
+// (Supabase port 6543, Neon's pooled host) rather than raising it.
+const max = Number(process.env.DATABASE_POOL_MAX ?? 3);
+const sql = g.__sql ?? postgres(url, { max });
 if (process.env.NODE_ENV !== "production") g.__sql = sql;
 
 export const db = drizzle(sql, { schema });

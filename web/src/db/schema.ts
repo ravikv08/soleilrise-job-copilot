@@ -1,5 +1,6 @@
 import {
   bigserial,
+  boolean,
   date,
   index,
   integer,
@@ -206,7 +207,7 @@ export const aiUsage = pgTable(
     cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
     durationMs: integer("duration_ms"),
-    ok: text("ok").notNull().default("true"),
+    ok: boolean("ok").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [

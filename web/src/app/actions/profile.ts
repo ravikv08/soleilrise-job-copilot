@@ -9,7 +9,7 @@ import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { AiError, callJson } from "@/lib/ai/client";
 import { parsePrompt } from "@/lib/ai/prompts";
-import { MODELS } from "@/lib/pricing";
+import { EFFORT, MODELS } from "@/lib/pricing";
 import type { MasterResume } from "@/lib/resume";
 
 export type ActionState = { ok: boolean; message?: string };
@@ -81,13 +81,21 @@ export async function parseResume(_prev: ActionState, form: FormData): Promise<A
   }
 
   await ensureProfile(userId);
+  // Save the raw text first: parsing can fail, and losing what someone just
+  // pasted is a worse outcome than an unparsed resume.
+  await db
+    .update(profiles)
+    .set({ resumeText: text, updatedAt: new Date() })
+    .where(eq(profiles.userId, userId));
+
   try {
     const { data } = await callJson<MasterResume>({
       userId,
       operation: "parse_resume",
       model: MODELS.parse,
+      effort: EFFORT.parse,
       prompt: parsePrompt(text),
-      maxTokens: 8000,
+      maxTokens: 16000,
     });
 
     if (!data?.name && !(data?.experience ?? []).length) {
@@ -96,7 +104,7 @@ export async function parseResume(_prev: ActionState, form: FormData): Promise<A
 
     await db
       .update(profiles)
-      .set({ resume: data, resumeText: text, updatedAt: new Date() })
+      .set({ resume: data, updatedAt: new Date() })
       .where(eq(profiles.userId, userId));
     revalidatePath("/profile");
     return { ok: true, message: `Parsed ${(data.experience ?? []).length} roles` };

@@ -77,16 +77,28 @@ const ratio = (a: Coverage[]) => (a.length ? a.filter((x) => x.hit).length / a.l
 export function analyse(master: MasterResume | null, result: TailorResult | null) {
   if (!master || !result) return null;
   const before = kwCover(result.keywords, resumeText(master));
-  // Until the approved final resume is assembled, score keyword coverage
-  // against what the model reports it achieved.
-  const afterText = [
-    result.headline,
-    result.summary,
-    ...(result.skills ?? []).map((s) => `${s.label}: ${s.items}`),
-    ...(result.experience ?? []).flatMap((e) => e.bullets.map((b) => b.text)),
-    ...(result.projects ?? []).map((p) => p.text),
-  ].join("\n");
-  const after = kwCover(result.keywords, afterText);
+  // Score the after-text over the same sections as the before-text. The
+  // tailored result only replaces the headline, summary, skills, bullets and
+  // projects; name, contact and education carry over from the master resume
+  // untouched. Leaving them out would count a keyword that lives only in,
+  // say, a certification under education as present before and missing
+  // after, and report the tailoring as having lowered the score.
+  const after = kwCover(
+    result.keywords,
+    resumeText({
+      ...master,
+      headline: result.headline || master.headline,
+      summary: result.summary || master.summary,
+      skills: result.skills?.length ? result.skills : master.skills,
+      projects: (result.projects ?? []).length
+        ? result.projects.map((p) => p.text)
+        : master.projects,
+      experience: (master.experience ?? []).map((role, i) => {
+        const tailored = (result.experience ?? []).find((e) => e.i === i);
+        return tailored ? { ...role, bullets: tailored.bullets.map((b) => b.text) } : role;
+      }),
+    }),
+  );
 
   return {
     before: scoreOf(result, "before", ratio(before)),

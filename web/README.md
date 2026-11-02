@@ -61,10 +61,22 @@ order by total_usd desc;
 
 Price a plan on that number, not on an estimate.
 
-**The dollar figures depend on the rate table in `src/lib/pricing.ts`, which holds
-placeholder prices.** Token counts are exact and come straight from the API; the
-dollars are derived. Check current pricing and update `RATES` before you charge
-anyone — past rows can be recomputed from their stored token counts.
+Token counts are exact and come straight from the API; the dollars are derived
+from the rate table in `src/lib/pricing.ts`. Re-check those rates against current
+pricing before you set a price — past rows recompute from their stored token
+counts, so a rate correction needs no backfill.
+
+### Model choice and spend
+
+Everything runs on **Claude Opus 5.5** (`src/lib/pricing.ts`). Cheaper models are
+one line away — Sonnet 5.5 is $2/$10 per MTok and Haiku 5.5 $0.10/$0.50, against
+Opus 5.5 at $4/$20 — and parsing and bulk scoring are the obvious candidates to
+move down. That is a quality trade, so make it on what `ai_usage` shows rather
+than inheriting it as a default.
+
+Spend is capped per user by `QUOTA_MONTHLY_USD` and `QUOTA_HOURLY_CALLS`, checked
+before every model call and counting failed calls too. Without them one account
+can run your key to any amount. The profile page shows each user their own usage.
 
 ## Design notes
 

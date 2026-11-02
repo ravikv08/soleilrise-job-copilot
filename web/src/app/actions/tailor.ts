@@ -1,5 +1,7 @@
 "use server";
 
+import { createHash } from "node:crypto";
+
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -8,15 +10,24 @@ import { db } from "@/db";
 import { applications, profiles } from "@/db/schema";
 import { AiError, callJson } from "@/lib/ai/client";
 import { tailorPrompt } from "@/lib/ai/prompts";
-import { MODELS } from "@/lib/pricing";
+import { EFFORT, MODELS } from "@/lib/pricing";
 import { INJECT, jdLooksReal, urlKey, validResult, type TailorResult } from "@/lib/resume";
 
 import type { ActionState } from "./profile";
 
 export async function listApplications() {
   const userId = await requireUserId();
+  // Deliberately not select(): jd holds up to 30k characters and result a
+  // large jsonb blob, and this list renders three short fields per row.
   return db
-    .select()
+    .select({
+      id: applications.id,
+      company: applications.company,
+      title: applications.title,
+      status: applications.status,
+      pipeline: applications.pipeline,
+      updatedAt: applications.updatedAt,
+    })
     .from(applications)
     .where(eq(applications.userId, userId))
     .orderBy(desc(applications.updatedAt))
@@ -51,7 +62,12 @@ export async function addPosting(_prev: ActionState, form: FormData): Promise<Ac
     };
   }
 
-  const key = url ? urlKey(url) : `paste:${jd.slice(0, 120).toLowerCase()}`;
+  // Hash the whole description: a prefix collides whenever two postings from
+  // the same company share a boilerplate header, and the unique index would
+  // then overwrite the first job instead of adding the second.
+  const key = url
+    ? urlKey(url)
+    : `paste:${createHash("sha256").update(jd).digest("hex").slice(0, 32)}`;
   await db
     .insert(applications)
     .values({
@@ -65,7 +81,17 @@ export async function addPosting(_prev: ActionState, form: FormData): Promise<Ac
     })
     .onConflictDoUpdate({
       target: [applications.userId, applications.urlKey],
-      set: { jd: jd.slice(0, 30000), pipeline: "ready", error: null, updatedAt: new Date() },
+      // The stored result was tailored to the previous description, so it is
+      // no longer about this posting. Clearing it is the honest answer; the
+      // alternative shows a resume scored against text that is gone.
+      set: {
+        jd: jd.slice(0, 30000),
+        pipeline: "ready",
+        result: null,
+        tailoredAt: null,
+        error: null,
+        updatedAt: new Date(),
+      },
     });
 
   revalidatePath("/studio");
@@ -106,6 +132,7 @@ export async function tailorApplication(id: string): Promise<ActionState> {
       operation: "tailor",
       model: MODELS.tailor,
       maxTokens: 16000,
+      effort: EFFORT.tailor,
       prompt: tailorPrompt(profile.resume, profile.facts, { url: app.url, jd: app.jd }),
     });
 
@@ -127,7 +154,10 @@ export async function tailorApplication(id: string): Promise<ActionState> {
       .update(applications)
       .set({
         pipeline: "ready",
-        status: "Awaiting approval",
+        // Only advance a job that has not moved past review. Re-tailoring to
+        // prep for a later round must not drag an Applied or Interview job
+        // back to the start of the funnel.
+        status: app.status === "Draft" ? "Awaiting approval" : app.status,
         result: data,
         company: data.job?.company || app.company,
         title: data.job?.title || app.title,
