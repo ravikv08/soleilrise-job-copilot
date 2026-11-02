@@ -186,3 +186,69 @@ export async function tailorApplication(id: string): Promise<ActionState> {
     return { ok: false, message };
   }
 }
+
+/** Accept or reject one change. Absent means accepted, so this only stores rejections. */
+export async function setDecision(
+  id: string,
+  changeId: string,
+  accepted: boolean,
+): Promise<ActionState> {
+  const userId = await requireUserId();
+  const [app] = await db
+    .select({ decisions: applications.decisions, status: applications.status })
+    .from(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
+    .limit(1);
+  if (!app) return { ok: false, message: "Not found." };
+
+  const next = { ...app.decisions };
+  if (accepted) delete next[changeId];
+  else next[changeId] = false;
+
+  await db
+    .update(applications)
+    .set({
+      decisions: next,
+      // Changing a decision invalidates an earlier approval: what was
+      // approved is no longer what would be downloaded.
+      ...(app.status === "Approved"
+        ? { status: "Awaiting approval" as const, approvedAt: null }
+        : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(applications.id, id));
+
+  revalidatePath(`/studio/${id}`);
+  return { ok: true };
+}
+
+/** Final approval. Only reachable once every flagged change has been decided. */
+export async function approveResume(id: string): Promise<ActionState> {
+  const userId = await requireUserId();
+  const [app] = await db
+    .select()
+    .from(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
+    .limit(1);
+  if (!app?.result) return { ok: false, message: "Nothing to approve yet." };
+
+  await db
+    .update(applications)
+    .set({ status: "Approved", approvedAt: new Date(), updatedAt: new Date() })
+    .where(eq(applications.id, id));
+
+  revalidatePath(`/studio/${id}`);
+  revalidatePath("/studio");
+  return { ok: true, message: "Approved" };
+}
+
+/** Reopen an approved resume for editing. */
+export async function unapprove(id: string): Promise<ActionState> {
+  const userId = await requireUserId();
+  await db
+    .update(applications)
+    .set({ status: "Awaiting approval", approvedAt: null, updatedAt: new Date() })
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
+  revalidatePath(`/studio/${id}`);
+  return { ok: true };
+}

@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
+import type { Decisions, Edits } from "@/lib/changes";
 import type { Applicant, MasterResume, TailorResult } from "@/lib/resume";
 
 /* ── Auth.js tables ────────────────────────────────────────────────────── */
@@ -161,10 +162,12 @@ export const applications = pgTable(
     error: text("error"),
 
     result: jsonb("result").$type<TailorResult | null>(),
-    decisions: jsonb("decisions").$type<Record<string, unknown>>().notNull().default({}),
-    edits: jsonb("edits").$type<Record<string, string>>().notNull().default({}),
+    decisions: jsonb("decisions").$type<Decisions>().notNull().default({}),
+    edits: jsonb("edits").$type<Edits>().notNull().default({}),
     verified: jsonb("verified").$type<Record<string, unknown>>().notNull().default({}),
     eligibility: jsonb("eligibility").$type<Record<string, unknown> | null>(),
+
+    approvedAt: timestamp("approved_at"),
 
     match: integer("match"),
     tailoredAt: date("tailored_at"),
