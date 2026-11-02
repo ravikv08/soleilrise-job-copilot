@@ -28,12 +28,16 @@ npm install
 cp .env.example .env.local     # fill in DATABASE_URL and ANTHROPIC_API_KEY
 npx auth secret                # writes AUTH_SECRET into .env.local
 npm run db:migrate             # creates the tables
-npm run dev
+npm run dev            # http://localhost:3002
 ```
+
+The dev server is pinned to **3002**, and `AUTH_URL` plus both OAuth callback
+URLs must use the same port — a mismatch is the usual cause of a sign-in that
+loops back to the sign-in page.
 
 For sign-in, add at least one OAuth provider to `.env.local`. For Google, create an
 OAuth client at <https://console.cloud.google.com/apis/credentials> with the redirect
-URI `http://localhost:3000/api/auth/callback/google`. The sign-in page says so too if
+URI `http://localhost:3002/api/auth/callback/google`. The sign-in page says so too if
 no provider is configured.
 
 ## Checks
