@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth, enabledProviders, signIn } from "@/auth";
+import { auth, devLoginEnabled, enabledProviders, hasProviders, signIn } from "@/auth";
 
 export default async function SignIn() {
   const session = await auth();
@@ -10,32 +10,70 @@ export default async function SignIn() {
     <section className="card grid max-w-md gap-4">
       <h1 className="text-2xl">Sign in</h1>
 
-      {enabledProviders.length > 0 ? (
-        <>
-          <p style={{ color: "var(--muted)" }}>
-            Your resume, jobs and applications stay private to your account.
+      {hasProviders ? (
+        <p style={{ color: "var(--muted)" }}>
+          Your resume, jobs and applications stay private to your account.
+        </p>
+      ) : null}
+
+      {enabledProviders.map((p, i) => (
+        <form
+          key={p.id}
+          action={async () => {
+            "use server";
+            await signIn(p.id, { redirectTo: "/profile" });
+          }}
+        >
+          <button className={i === 0 ? "btn" : "btn ghost"} type="submit">
+            {p.label}
+          </button>
+        </form>
+      ))}
+
+      {devLoginEnabled ? (
+        <form
+          className="grid gap-2"
+          action={async (form: FormData) => {
+            "use server";
+            await signIn("dev-email", {
+              email: String(form.get("email") ?? ""),
+              redirectTo: "/profile",
+            });
+          }}
+        >
+          {enabledProviders.length > 0 ? (
+            <div className="text-xs" style={{ color: "var(--muted)" }}>
+              or
+            </div>
+          ) : null}
+          <label className="grid gap-1 text-sm font-semibold">
+            Email
+            <input
+              name="email"
+              type="email"
+              required
+              className="field"
+              placeholder="you@example.com"
+            />
+          </label>
+          <button className="btn" type="submit">
+            Send me a sign-in link
+          </button>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>
+            Development mode: the link is printed in the terminal running{" "}
+            <code>npm run dev</code>, not emailed. Paste it into your browser to sign in.
           </p>
-          {enabledProviders.map((p, i) => (
-            <form
-              key={p.id}
-              action={async () => {
-                "use server";
-                await signIn(p.id, { redirectTo: "/profile" });
-              }}
-            >
-              <button className={i === 0 ? "btn" : "btn ghost"} type="submit">
-                {p.label}
-              </button>
-            </form>
-          ))}
-        </>
-      ) : (
+        </form>
+      ) : null}
+
+      {!hasProviders ? (
         <div className="notice warn">
-          No sign-in provider is configured yet. Add <code>AUTH_GOOGLE_ID</code> and{" "}
-          <code>AUTH_GOOGLE_SECRET</code> (or the GitHub pair — both halves are required) to{" "}
-          <code>.env.local</code>, then restart the dev server. See <code>web/README.md</code>.
+          No way to sign in is configured. For local development, set{" "}
+          <code>DEV_EMAIL_LOGIN=1</code> in <code>.env.local</code> and restart — that prints a
+          sign-in link to the terminal and needs no other account. For real users, add an OAuth
+          provider (both halves). See <code>web/README.md</code>.
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

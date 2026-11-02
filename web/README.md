@@ -35,7 +35,22 @@ The dev server is pinned to **3002**, and `AUTH_URL` plus both OAuth callback
 URLs must use the same port — a mismatch is the usual cause of a sign-in that
 loops back to the sign-in page.
 
-For sign-in, add at least one OAuth provider to `.env.local`. For Google, create an
+### Signing in locally without any OAuth app
+
+Set `DEV_EMAIL_LOGIN="1"` in `.env.local` and restart. The sign-in page then
+takes an email address and **prints the sign-in link to the terminal running
+`npm run dev`** instead of emailing it — paste that link into your browser and
+you are signed in. No OAuth app, no email service, no third-party account.
+
+It is off unless you set it, and refuses to load when `NODE_ENV=production`.
+A printed sign-in link is a bypass for anyone who can read the logs, so it must
+never reach a deployed environment.
+
+For real users you need an OAuth provider, or an email provider (Resend,
+Nodemailer) wired into the same `type: "email"` slot — the flow is identical,
+only `sendVerificationRequest` changes.
+
+For OAuth, add at least one provider to `.env.local`. For Google, create an
 OAuth client at <https://console.cloud.google.com/apis/credentials> with the redirect
 URI `http://localhost:3002/api/auth/callback/google`. The sign-in page says so too if
 no provider is configured.
