@@ -64,7 +64,7 @@ export function TailorButton({
           disabled={pending}
           onClick={() => start(async () => setState(await action(id)))}
         >
-          {pending ? "Tailoring… (20–60s)" : label}
+          {pending ? "Tailoring… this takes about a minute" : label}
         </button>
       </div>
       {state?.message ? (
