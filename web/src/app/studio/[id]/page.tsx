@@ -276,10 +276,18 @@ export default async function ApplicationPage({
                 Job fit <b>{scores?.after.total}</b> · {hit}/{coverage.length} keywords ·
                 approved {app.approvedAt?.toISOString().slice(0, 10)}
               </p>
-              <div className="notice warn">
-                DOCX and PDF download are not ported yet. The approved text is below — copy it
-                into your own document for now.
+              <div className="flex flex-wrap gap-3">
+                <a className="btn big" href={`/api/resume/${app.id}?format=pdf`}>
+                  Download PDF
+                </a>
+                <a className="btn big ghost" href={`/api/resume/${app.id}?format=docx`}>
+                  Download DOCX
+                </a>
               </div>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                Built from what you approved, rejections included. The PDF is checked line by
+                line against the approved text before it is sent.
+              </p>
               <ApproveButton id={app.id} action={unapprove} label="Edit this resume" ghost />
             </>
           ) : (
