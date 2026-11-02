@@ -15,6 +15,13 @@
       "when": 1793641970263,
       "tag": "0001_approved_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793645885653,
+      "tag": "0002_job_scores",
+      "breakpoints": true
     }
   ]
 }

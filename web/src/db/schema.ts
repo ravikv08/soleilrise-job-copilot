@@ -196,6 +196,33 @@ export const applications = pgTable(
   ],
 );
 
+/**
+ * One user's score for one shared job.
+ *
+ * Separate from `jobs` because the catalog is shared and the score is not:
+ * the same posting means something different to each resume. Keyed by both,
+ * so re-scoring updates in place.
+ */
+export const jobScores = pgTable(
+  "job_scores",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    match: integer("match").notNull(),
+    why: text("why").notNull().default(""),
+    missing: jsonb("missing").$type<string[]>().notNull().default([]),
+    scoredAt: timestamp("scored_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.jobId] }),
+    index("job_scores_user_match_idx").on(t.userId, t.match),
+  ],
+);
+
 /* ── AI usage ──────────────────────────────────────────────────────────── */
 
 /**
