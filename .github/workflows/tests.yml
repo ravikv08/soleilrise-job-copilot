@@ -34,6 +34,39 @@ jobs:
         working-directory: apply-helper
         run: python test/test_fill.py
 
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    # The build imports the db client and auth config, which read these at
+    # module load. They only need to be present and well-formed, not reachable:
+    # nothing in the build connects to Postgres or calls the model.
+    env:
+      DATABASE_URL: postgresql://user:pass@localhost:5432/placeholder
+      AUTH_SECRET: ci-placeholder-not-a-real-secret
+      ANTHROPIC_API_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
   app:
     name: app
     runs-on: ubuntu-latest
