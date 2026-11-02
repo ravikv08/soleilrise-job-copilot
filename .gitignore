@@ -4,3 +4,4 @@ apply-helper/apply
 __pycache__/
 *.pdf
 .DS_Store
+.claude/
