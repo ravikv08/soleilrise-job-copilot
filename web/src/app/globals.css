@@ -166,3 +166,132 @@ select:focus-visible {
   background: var(--bad-bg);
   color: var(--bad);
 }
+
+/* ── Profile ─────────────────────────────────────────────────────────────
+   Ported from the artifact's pf-* rules so the web profile reads as the
+   same product. The ring is a conic-gradient dial; --p is the percentage. */
+
+.ring {
+  --p: 0;
+  --rc: var(--bad);
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: conic-gradient(var(--rc) calc(var(--p) * 1%), var(--sunk) 0);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ring > div {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1;
+}
+.ring b { font-family: var(--display, inherit); font-weight: 800; font-size: 1.15rem; }
+.ring small { font-size: 0.58rem; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+.ring.s-good { --rc: var(--good); }
+.ring.s-mid { --rc: var(--mid); }
+.ring.s-bad { --rc: var(--bad); }
+
+.pf-hero { padding: 0; overflow: hidden; }
+.pf-hero > *:not(.pf-banner):not(.pf-head) { margin-left: 22px; margin-right: 22px; }
+.pf-banner {
+  height: 120px;
+  background: linear-gradient(100deg, var(--sun1), var(--sun2) 40%, var(--sun3) 75%, var(--sun4));
+}
+.pf-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -54px 22px 0;
+}
+.pf-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: var(--sunk);
+  border: 4px solid var(--surface);
+  display: grid;
+  place-items: center;
+  font-family: var(--display, inherit);
+  font-weight: 800;
+  font-size: 2.2rem;
+  color: var(--fg);
+}
+.pf-name { font-size: 2rem; margin: 14px 0 0; }
+.pf-headline { font-weight: 600; margin-top: 4px; }
+.pf-contact { font-size: 0.88rem; margin-top: 6px; }
+.pf-contact a { color: var(--accent); }
+.pf-open {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sunk);
+}
+.pf-open > b { color: var(--good); }
+.pf-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 22px 0 !important;
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+}
+.pf-tabs a {
+  padding: 12px 10px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.pf-tabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
+
+.pf-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pf-stats > div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 2px;
+}
+.pf-stats b { font-family: var(--display, inherit); font-weight: 800; font-size: 1.7rem; }
+.pf-stats span { font-size: 0.8rem; color: var(--muted); }
+
+.pf-two { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+@media (max-width: 980px) { .pf-two { grid-template-columns: 1fr; } }
+
+.pf-rings { display: flex; flex-wrap: wrap; gap: 18px; }
+.pf-ring { display: grid; justify-items: center; gap: 4px; text-align: center; max-width: 92px; }
+.pf-rk { font-size: 0.82rem; }
+.pf-ring span { font-size: 0.72rem; color: var(--muted); line-height: 1.2; }
+
+.pf-meter { height: 8px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.pf-meter span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--sun3)); }
+.pf-checks { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 0.86rem; }
+.pf-checks li { color: var(--muted); }
+.pf-checks li.ok { color: var(--good); }
+
+.pf-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.pf-exp { display: flex; gap: 12px; align-items: flex-start; }
+.pf-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--sunk);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  flex: none;
+}

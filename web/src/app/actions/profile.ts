@@ -112,3 +112,18 @@ export async function parseResume(_prev: ActionState, form: FormData): Promise<A
     return { ok: false, message: e instanceof AiError ? e.message : "Couldn't parse that resume." };
   }
 }
+
+export async function saveTargetRoles(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const userId = await requireUserId();
+  // Five slots, matching the artifact. Blank slots are dropped, not stored.
+  const roles = [0, 1, 2, 3, 4]
+    .map((i) => String(form.get(`role${i}`) ?? "").trim().slice(0, 120))
+    .filter(Boolean);
+  await ensureProfile(userId);
+  await db
+    .update(profiles)
+    .set({ targetRoles: roles, updatedAt: new Date() })
+    .where(eq(profiles.userId, userId));
+  revalidatePath("/profile");
+  return { ok: true, message: roles.length ? `Saved ${roles.length} target role(s)` : "Cleared" };
+}

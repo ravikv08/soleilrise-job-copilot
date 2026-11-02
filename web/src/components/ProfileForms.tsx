@@ -162,3 +162,40 @@ export function ApplicantForm({
     </form>
   );
 }
+
+export function TargetRolesForm({
+  action,
+  roles,
+}: {
+  action: (prev: ActionState, form: FormData) => Promise<ActionState>;
+  roles: string[];
+}) {
+  const [state, formAction] = useActionState(action, EMPTY);
+
+  return (
+    <form action={formAction} className="grid gap-3">
+      <h2 className="text-xl">Target roles</h2>
+      <p style={{ color: "var(--muted)" }}>
+        Your top 5. These are what &ldquo;Open to work&rdquo; shows, and what job matching will
+        rank against once Find Jobs is ported.
+      </p>
+      <ol className="grid gap-2">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <li key={i}>
+            <input
+              name={`role${i}`}
+              className="field"
+              defaultValue={roles[i] ?? ""}
+              placeholder={i === 0 ? "e.g. Director of Data & AI" : ""}
+              aria-label={`Target role ${i + 1}`}
+            />
+          </li>
+        ))}
+      </ol>
+      <Status state={state} />
+      <div>
+        <SubmitButton>Save roles</SubmitButton>
+      </div>
+    </form>
+  );
+}
