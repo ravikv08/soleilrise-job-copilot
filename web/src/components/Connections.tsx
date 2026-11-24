@@ -3,7 +3,44 @@
 import { useState, useTransition } from "react";
 
 import type { ActionState } from "@/app/actions/profile";
+import type { Outreach } from "@/app/actions/connect";
 import type { NetGroup } from "@/lib/linkedin";
+
+function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  const [copied, setCopied] = useState(false);
+  const [text, setText] = useState(value);
+
+  return (
+    <div className="grid gap-1">
+      <div className="flex items-center gap-2">
+        <b className="text-sm">{label}</b>
+        {hint ? (
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
+            {hint}
+          </span>
+        ) : null}
+        <button
+          className="btn small ghost"
+          style={{ marginLeft: "auto" }}
+          onClick={() => {
+            navigator.clipboard?.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <textarea
+        className="field"
+        rows={label === "Connection note" ? 3 : label === "InMail subject" ? 1 : 6}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        aria-label={label}
+      />
+    </div>
+  );
+}
 
 function Draft({
   id,
@@ -13,52 +50,44 @@ function Draft({
 }: {
   id: string;
   group: string;
-  existing?: string;
+  existing?: Outreach | string;
   action: (id: string, group: string) => Promise<ActionState>;
 }) {
   const [pending, start] = useTransition();
-  const [text, setText] = useState(existing ?? "");
-  const [err, setErr] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<ActionState | null>(null);
+  // Drafts written before the InMail formats existed were a single string.
+  // Show them as the note rather than rendering nothing at all.
+  const d: Outreach | undefined =
+    typeof existing === "string" ? { note: existing } : existing;
 
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap gap-2">
+    <div className="grid gap-3">
+      <div>
         <button
           className="btn small ghost"
           disabled={pending}
-          onClick={() =>
-            start(async () => {
-              const r = await action(id, group);
-              setErr(r.ok ? null : (r.message ?? "Failed"));
-            })
-          }
+          onClick={() => start(async () => setState(await action(id, group)))}
         >
-          {pending ? "Writing…" : text ? "Rewrite message" : "Write a message"}
+          {pending ? "Writing…" : d?.note ? "Rewrite messages" : "Write the messages"}
         </button>
-        {text ? (
-          <button
-            className="btn small ghost"
-            onClick={() => {
-              navigator.clipboard?.writeText(text);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
-        ) : null}
       </div>
-      {err ? <div className="notice err">{err}</div> : null}
-      {text ? (
-        <textarea
-          className="field"
-          rows={7}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="Outreach message"
+
+      {state?.message ? (
+        <div className={`notice ${state.ok ? "ok" : "warn"}`}>{state.message}</div>
+      ) : null}
+
+      {d?.note ? (
+        <Field
+          label="Connection note"
+          value={d.note}
+          hint={`${d.note.length}/300 — free, no Premium needed`}
         />
       ) : null}
+      {d?.inmailSubject ? <Field label="InMail subject" value={d.inmailSubject} /> : null}
+      {d?.inmail ? (
+        <Field label="InMail body" value={d.inmail} hint="Uses a Premium credit — send to the best match only" />
+      ) : null}
+      {d?.followUp ? <Field label="Follow-up (5-7 days later)" value={d.followUp} /> : null}
     </div>
   );
 }
@@ -77,7 +106,7 @@ export function Connections({
   plan: NetGroup[];
   why?: string;
   named: { name: string; role?: string; url: string }[];
-  outreach: Record<string, string>;
+  outreach: Record<string, Outreach | string>;
   readTeam: (id: string) => Promise<ActionState>;
   draft: (id: string, group: string) => Promise<ActionState>;
   hasRead: boolean;

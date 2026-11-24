@@ -14,6 +14,14 @@ import type { NetworkRead } from "@/lib/linkedin";
 
 import type { ActionState } from "./profile";
 
+/** One set of drafts: the three LinkedIn surfaces plus the nudge. */
+export type Outreach = {
+  note?: string;
+  inmailSubject?: string;
+  inmail?: string;
+  followUp?: string;
+};
+
 /**
  * Read the posting for who is likely involved in hiring.
  *
@@ -95,39 +103,55 @@ export async function draftOutreach(id: string, group: string): Promise<ActionSt
     ? finalResume(profile.resume, app.result, app.decisions, app.edits)
     : profile.resume;
 
-  const prompt = `Write a LinkedIn message to ${KIND[group] ?? "a professional contact"}.
+  const prompt = `Write LinkedIn outreach to ${KIND[group] ?? "a professional contact"}.
 Recipient works at ${app.company}. Role being discussed: "${app.title}".
-Under 90 words. LinkedIn connection-request notes must fit 300 characters, so write a version under 280 characters FIRST, then a blank line, then the longer message.
-Plain, specific, human: name the 2 strongest overlaps between the candidate and the role, one concrete result from the resume, and one clear ask. No flattery, no buzzwords (${BANNED.join(", ")}), no emojis. Never claim experience the resume does not show. Do not invent the recipient's name — write it so the candidate fills the name in.
+
+Produce three things, each for a different LinkedIn surface:
+1. "note" — a connection-request note. HARD LIMIT 280 characters including spaces. One specific overlap and one ask. This is the only one most people will read.
+2. "inmailSubject" — an InMail subject line, under 60 characters, concrete and not salesy. No "Quick question" or "Opportunity".
+3. "inmail" — the InMail body, 120-160 words. Room for two overlaps, one concrete result with its number, and a specific ask. InMail is a paid credit, so it must earn the reply.
+4. "followUp" — a 50-word nudge to send 5-7 days later if there is no reply. It must add something new, not repeat the first message.
+
+Rules for all of them. Plain, specific, human. Name only overlaps the candidate's evidence actually supports. Keep every number exactly as the evidence has it. No flattery, no buzzwords (${BANNED.join(", ")}), no emojis, no "I hope this finds you well". Never claim experience the resume does not show. Do not invent the recipient's name — write "[Name]" for the candidate to fill in.
+
 CANDIDATE: ${sent.headline} — ${sent.summary}
 CANDIDATE EVIDENCE: ${(sent.experience ?? []).flatMap((e) => (e.bullets ?? []).slice(0, 3)).slice(0, 10).join(" | ")}
 POSTING EXCERPT: ${cleanJD(app.jd).slice(0, 2500)}
-Reply with only JSON: {"short":"the under-280-character version","long":"the longer message"}`;
+Reply with only JSON: {"note":"","inmailSubject":"","inmail":"","followUp":""}`;
 
   try {
-    const { data } = await callJson<{ short?: string; long?: string }>({
+    const { data } = await callJson<Outreach>({
       userId,
       applicationId: id,
       operation: "screening_answers",
       model: MODELS.tailor,
       effort: EFFORT.score,
-      maxTokens: 2000,
+      // Four drafts plus adaptive thinking; 2000 truncated mid-JSON.
+      maxTokens: 8000,
       prompt,
     });
 
-    const text = [data?.short, data?.long].filter(Boolean).join("\n\n").trim();
-    if (!text) return { ok: false, message: "Came back empty. Try again." };
+    if (!data?.note && !data?.inmail) return { ok: false, message: "Came back empty. Try again." };
+
+    // LinkedIn silently truncates a connection note past 300 characters, so a
+    // draft that overruns is worse than useless — flag it rather than ship it.
+    const over = (data.note ?? "").length > 300;
 
     await db
       .update(applications)
       .set({
-        outreach: { ...(app.outreach ?? {}), [group]: text },
+        outreach: { ...(app.outreach ?? {}), [group]: data },
         updatedAt: new Date(),
       })
       .where(eq(applications.id, id));
 
     revalidatePath(`/studio/${id}`);
-    return { ok: true, message: "Drafted" };
+    return {
+      ok: true,
+      message: over
+        ? `Drafted, but the connection note came out at ${(data.note ?? "").length} characters — trim it under 300 before sending.`
+        : "Drafted",
+    };
   } catch (e) {
     return { ok: false, message: e instanceof AiError ? e.message : "Could not draft that." };
   }
