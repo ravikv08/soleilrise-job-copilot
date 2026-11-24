@@ -39,18 +39,38 @@ async function getJson(url: string): Promise<unknown> {
   return res.json();
 }
 
-/** Greenhouse returns HTML with entities; everything downstream wants text. */
-function htmlToText(html: string): string {
-  return html
-    .replace(/<\s*(br|\/p|\/li|\/div|\/h[1-6])\s*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
+function decodeEntities(s: string): string {
+  return s
     .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
     .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    // Last, so "&amp;lt;" becomes "&lt;" here and is decoded on the next pass.
+    .replace(/&amp;/g, "&");
+}
+
+/**
+ * Greenhouse serves descriptions as HTML, and escapes it — Stripe's board
+ * returns "&lt;h2&gt;Who we are&lt;/h2&gt;". Stripping tags before decoding
+ * leaves the escaped ones untouched and then turns them into real tags, so
+ * the stored text is full of markup the model pays to read.
+ *
+ * Decode first, then strip, and repeat while decoding still reveals tags.
+ */
+function htmlToText(html: string): string {
+  let s = html;
+  for (let pass = 0; pass < 3; pass++) {
+    const decoded = decodeEntities(s);
+    const stripped = decoded
+      .replace(/<\s*(br|\/p|\/li|\/div|\/h[1-6]|\/tr)\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, " ");
+    if (stripped === s) break;
+    s = stripped;
+  }
+  return s
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
@@ -151,8 +171,28 @@ async function fetchBoard(board: Board): Promise<CrawledJob[]> {
 }
 
 export type BoardResult =
-  | { board: Board; ok: true; jobs: CrawledJob[] }
+  | { board: Board; ok: true; jobs: CrawledJob[]; boilerplate: number }
   | { board: Board; ok: false; error: string };
+
+/**
+ * Some boards return the same company blurb as the "description" for every
+ * posting — Stripe's does, so its roles arrive as identical "About Stripe"
+ * text with nothing role-specific in them.
+ *
+ * Scoring those produces a confident number about text that is not the job.
+ * Two Stripe roles scored 76 and 66 off the same boilerplate before this
+ * existed. Drop them instead: the score would be fiction, and a fabricated
+ * match is worse than a missing one.
+ */
+function dropBoilerplate(jobs: CrawledJob[]): { kept: CrawledJob[]; dropped: number } {
+  const seen = new Map<string, number>();
+  for (const j of jobs) {
+    const k = j.description.trim();
+    if (k) seen.set(k, (seen.get(k) ?? 0) + 1);
+  }
+  const kept = jobs.filter((j) => (seen.get(j.description.trim()) ?? 0) < 2);
+  return { kept, dropped: jobs.length - kept.length };
+}
 
 /**
  * Crawl boards a few at a time. Deliberately not all at once: these are other
@@ -169,7 +209,8 @@ export async function crawlBoards(
     const settled = await Promise.all(
       slice.map(async (board): Promise<BoardResult> => {
         try {
-          return { board, ok: true, jobs: await fetchBoard(board) };
+          const { kept, dropped } = dropBoilerplate(await fetchBoard(board));
+          return { board, ok: true, jobs: kept, boilerplate: dropped };
         } catch (e) {
           return { board, ok: false, error: e instanceof Error ? e.message : String(e) };
         }

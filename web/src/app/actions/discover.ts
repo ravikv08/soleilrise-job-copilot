@@ -39,6 +39,7 @@ export async function runCrawl(limitBoards?: number): Promise<CrawlSummary> {
 
   const failed = results.filter((r) => !r.ok);
   const found = results.flatMap((r) => (r.ok ? r.jobs : []));
+  const boilerplate = results.reduce((n, r) => n + (r.ok ? r.boilerplate : 0), 0);
   const keep = found.filter((j) => usable(j, MAX_AGE_DAYS) && inUS(j.location));
 
   let inserted = 0;
@@ -78,7 +79,11 @@ export async function runCrawl(limitBoards?: number): Promise<CrawlSummary> {
   revalidatePath("/find");
   return {
     ok: true,
-    message: `Read ${results.length - failed.length} of ${results.length} boards, kept ${keep.length} US postings`,
+    message:
+      `Read ${results.length - failed.length} of ${results.length} boards, kept ${keep.length} US postings` +
+      (boilerplate
+        ? `. Skipped ${boilerplate} whose board returns the same company blurb for every role, so there is no real description to score.`
+        : ""),
     boards: results.length,
     failed: failed.length,
     seen: found.length,
