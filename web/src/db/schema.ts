@@ -16,6 +16,7 @@ import {
 import type { AdapterAccountType } from "next-auth/adapters";
 
 import type { Decisions, Edits } from "@/lib/changes";
+import type { NetworkRead } from "@/lib/linkedin";
 import type { Applicant, MasterResume, TailorResult } from "@/lib/resume";
 
 /* ── Auth.js tables ────────────────────────────────────────────────────── */
@@ -179,6 +180,10 @@ export const applications = pgTable(
     edits: jsonb("edits").$type<Edits>().notNull().default({}),
     verified: jsonb("verified").$type<Record<string, unknown>>().notNull().default({}),
     eligibility: jsonb("eligibility").$type<Record<string, unknown> | null>(),
+    /** What the model read out of the posting about who is hiring. */
+    network: jsonb("network").$type<NetworkRead | null>(),
+    /** Outreach drafts the user asked for, keyed by the search group. */
+    outreach: jsonb("outreach").$type<Record<string, string>>().notNull().default({}),
 
     approvedAt: timestamp("approved_at"),
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { draftOutreach, readHiringTeam } from "@/app/actions/connect";
 import { getProfile } from "@/app/actions/profile";
 import {
   approveResume,
@@ -12,9 +13,11 @@ import {
 } from "@/app/actions/tailor";
 import { auth } from "@/auth";
 import { TailorButton } from "@/components/StudioForms";
+import { Connections } from "@/components/Connections";
 import { StatusPicker } from "@/components/StatusPicker";
 import { ApproveButton, ChangeRow, StepNav } from "@/components/StudioSteps";
 import { computeChanges, finalResume, needsReview } from "@/lib/changes";
+import { findPerson, netPlan } from "@/lib/linkedin";
 import { TARGET, validResult } from "@/lib/resume";
 import { analyse, kwCover, resumeText, tier } from "@/lib/score";
 
@@ -361,6 +364,21 @@ export default async function ApplicationPage({
             ) : null}
           </div>
         </section>
+      ) : null}
+
+      {step === 4 && result ? (
+        <Connections
+          id={app.id}
+          plan={netPlan(app.company, app.title, app.network, master)}
+          why={app.network?.why}
+          named={(app.network?.named_in_posting ?? [])
+            .filter((n) => n?.name)
+            .map((n) => ({ ...n, url: findPerson(n.name, app.company) }))}
+          outreach={app.outreach ?? {}}
+          readTeam={readHiringTeam}
+          draft={draftOutreach}
+          hasRead={!!app.network}
+        />
       ) : null}
 
       <details className="card">
