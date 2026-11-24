@@ -86,25 +86,74 @@ export async function runCrawl(limitBoards?: number): Promise<CrawlSummary> {
   };
 }
 
-/** Jobs this user has not scored yet, newest first. */
-async function unscored(userId: string, limit: number) {
+/** Words too common in job titles to tell one role from another. */
+const TITLE_STOP = new Set([
+  "of", "the", "and", "for", "a", "an", "to", "in", "at", "on",
+  "senior", "staff", "lead", "principal", "sr", "jr",
+]);
+
+/**
+ * Title words worth matching on, taken from the user's target roles.
+ *
+ * "Director of Data & AI" yields director, data, ai. Short and stop words are
+ * dropped so a match means something; "of" would match every posting.
+ */
+function titleTerms(targetRoles: string[]): string[] {
+  const terms = targetRoles
+    .flatMap((r) => r.toLowerCase().split(/[^a-z0-9+]+/))
+    .filter((w) => w.length > 1 && !TITLE_STOP.has(w));
+  return [...new Set(terms)];
+}
+
+/**
+ * Jobs this user has not scored yet.
+ *
+ * Scoring costs money per job, so candidates whose title relates to a saved
+ * target role come first. Without this the batch is simply the newest 20,
+ * which spends the budget reading hardware-test and HRIS postings for a data
+ * leader. With no target roles saved there is nothing to prefer, so it falls
+ * back to newest first.
+ */
+async function unscored(userId: string, limit: number, targetRoles: string[]) {
   const cutoff = new Date(Date.now() - MAX_AGE_DAYS * 86_400_000);
-  return db
-    .select({
-      id: jobs.id,
-      company: jobs.company,
-      title: jobs.title,
-      location: jobs.location,
-      description: jobs.description,
-    })
-    .from(jobs)
-    .leftJoin(
-      jobScores,
-      and(eq(jobScores.jobId, jobs.id), eq(jobScores.userId, userId)),
-    )
-    .where(and(isNull(jobScores.jobId), gte(jobs.postedAt, cutoff)))
-    .orderBy(desc(jobs.postedAt))
+  const terms = titleTerms(targetRoles);
+
+  const cols = {
+    id: jobs.id,
+    company: jobs.company,
+    title: jobs.title,
+    location: jobs.location,
+    description: jobs.description,
+  };
+  const unseen = and(isNull(jobScores.jobId), gte(jobs.postedAt, cutoff));
+
+  const base = () =>
+    db
+      .select(cols)
+      .from(jobs)
+      .leftJoin(jobScores, and(eq(jobScores.jobId, jobs.id), eq(jobScores.userId, userId)));
+
+  if (!terms.length) return base().where(unseen).orderBy(desc(jobs.postedAt)).limit(limit);
+
+  // Rank by how many target-role words the title carries, then by recency.
+  const hits = sql<number>`(${sql.join(
+    terms.map((w) => sql`(case when ${jobs.title} ilike ${"%" + w + "%"} then 1 else 0 end)`),
+    sql` + `,
+  )})`;
+
+  const matched = await base()
+    .where(and(unseen, sql`${hits} > 0`))
+    .orderBy(desc(hits), desc(jobs.postedAt))
     .limit(limit);
+
+  if (matched.length >= limit) return matched;
+
+  // Top up with the newest unrelated ones rather than returning a short batch.
+  const rest = await base()
+    .where(and(unseen, sql`${hits} = 0`))
+    .orderBy(desc(jobs.postedAt))
+    .limit(limit - matched.length);
+  return [...matched, ...rest];
 }
 
 type Scored = { id: string; match: number; why: string; missing: string[] };
@@ -124,7 +173,7 @@ export async function scoreJobs(count = 20): Promise<ActionState> {
     return { ok: false, message: "Add your master resume on the Profile page first." };
   }
 
-  const batch = await unscored(userId, count);
+  const batch = await unscored(userId, count, profile.targetRoles ?? []);
   if (!batch.length) return { ok: true, message: "Everything is scored." };
 
   const m = profile.resume;
