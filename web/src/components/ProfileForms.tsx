@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { SubmitButton } from "@/components/SubmitButton";
 import type { ActionState } from "@/app/actions/profile";
+import { alertLinks } from "@/lib/linkedin";
 import type { Applicant, MasterResume } from "@/lib/resume";
 
 const EMPTY: ActionState = { ok: true };
@@ -166,9 +167,11 @@ export function ApplicantForm({
 export function TargetRolesForm({
   action,
   roles,
+  location,
 }: {
   action: (prev: ActionState, form: FormData) => Promise<ActionState>;
   roles: string[];
+  location?: string;
 }) {
   const [state, formAction] = useActionState(action, EMPTY);
 
@@ -179,9 +182,9 @@ export function TargetRolesForm({
         Your top 5. These are what &ldquo;Open to work&rdquo; shows, and what job matching will
         rank against once Find Jobs is ported.
       </p>
-      <ol className="grid gap-2">
+      <ol className="grid gap-3">
         {[0, 1, 2, 3, 4].map((i) => (
-          <li key={i}>
+          <li key={i} className="grid gap-1">
             <input
               name={`role${i}`}
               className="field"
@@ -189,9 +192,45 @@ export function TargetRolesForm({
               placeholder={i === 0 ? "e.g. Director of Data & AI" : ""}
               aria-label={`Target role ${i + 1}`}
             />
+            {roles[i] ? (
+              <div className="flex flex-wrap gap-2">
+                {alertLinks(roles[i], location).map((l) => (
+                  <a
+                    key={l.label}
+                    className="btn small ghost"
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {l.label} ↗
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </li>
         ))}
       </ol>
+
+      <details style={{ color: "var(--muted)" }}>
+        <summary style={{ cursor: "pointer" }}>
+          <b>Get these roles mailed to you daily</b> — two-minute setup
+        </summary>
+        <ol className="mt-2 grid gap-1 pl-5 text-sm" style={{ listStyle: "decimal" }}>
+          <li>
+            Open a link above. It is a LinkedIn search for that role, posted in the last 24
+            hours, newest first.
+          </li>
+          <li>
+            Click <b>Set alert</b> → <b>Daily</b> → <b>Email</b>, sent to the address you use
+            here.
+          </li>
+          <li>
+            LinkedIn then mails you new postings each day. Those emails can be read back into
+            your job list — LinkedIn sending them to you is not the same as scraping the site,
+            which this app will not do.
+          </li>
+        </ol>
+      </details>
       <Status state={state} />
       <div>
         <SubmitButton>Save roles</SubmitButton>

@@ -200,7 +200,11 @@ export default async function ProfilePage({
 
       {tab === "roles" ? (
         <div className="card">
-          <TargetRolesForm action={saveTargetRoles} roles={targetRoles} />
+          <TargetRolesForm
+            action={saveTargetRoles}
+            roles={targetRoles}
+            location={applicant.location}
+          />
         </div>
       ) : null}
 

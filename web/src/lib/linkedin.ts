@@ -170,3 +170,42 @@ export function netPlan(
     },
   ];
 }
+
+/**
+ * A LinkedIn *jobs* search for one target role, scoped to the last 24 hours
+ * and sorted newest first — the shape you want behind a daily alert.
+ *
+ * Ported from the artifact's liSearchUrl(). The point is not to browse these
+ * by hand: open one, click Set alert → Daily → Email, and LinkedIn then mails
+ * the new postings to you. That mail is LinkedIn sending you data it chose to
+ * send, which is why reading it later is fair game where scraping is not.
+ */
+export function jobSearchUrl(
+  role: string,
+  opts: { remote?: boolean; location?: string; level?: string } = {},
+): string {
+  const p = new URLSearchParams({
+    keywords: role,
+    location: opts.remote ? "United States" : (opts.location || "San Francisco Bay Area"),
+    f_TPR: "r86400", // posted in the last 24 hours
+    sortBy: "DD", // newest first
+  });
+  if (opts.remote) p.set("f_WT", "2"); // remote only
+  if (opts.level) p.set("f_E", opts.level);
+  return `https://www.linkedin.com/jobs/search/?${p.toString()}`;
+}
+
+/**
+ * LinkedIn's experience-level facet. Leadership titles sit a band higher, so
+ * a search for "Director of Data" should not return senior-IC postings.
+ */
+export const levelFor = (role: string) => (LEADER.test(role) ? "5,6" : "4,5");
+
+/** The two alerts worth setting per role: local, and US-remote. */
+export function alertLinks(role: string, location?: string) {
+  const level = levelFor(role);
+  return [
+    { label: location ? `LinkedIn · ${location}` : "LinkedIn · Bay Area", url: jobSearchUrl(role, { location, level }) },
+    { label: "US remote", url: jobSearchUrl(role, { remote: true, level }) },
+  ];
+}
